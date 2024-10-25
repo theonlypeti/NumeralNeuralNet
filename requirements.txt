@@ -1,0 +1,12 @@
+coloredlogs~=15.0.1
+nextcord
+requests~=2.32.3
+urllib3~=2.2.3
+watchdog~=4.0.1
+imageio
+argparse
+Pillow
+pandas
+numpy
+tensorflow
+keras
