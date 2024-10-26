@@ -134,10 +134,10 @@ if __name__ == "__main__":
     directory = args.directory if args.directory else os.getcwd()
     # os.chdir(directory)
     if not os.path.exists(os.path.join(directory, "0_input.png")):
-        create_imgs(directory, args.w, args.h)
+        create_imgs(directory, int(args.w), int(args.h))
         logger.info("Created 10 images for you to edit. Edit them and save them to see the results.")
 
-    event_handler = ImageToData(visualize=args.visualize, resolution=args.resolution, tolerance=5)
+    event_handler = ImageToData(visualize=args.visualize, resolution=int(args.resolution), tolerance=5)
     observer = Observer()
     observer.schedule(event_handler, directory, recursive=False)
     observer.start()
