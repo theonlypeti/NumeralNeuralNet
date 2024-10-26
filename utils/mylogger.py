@@ -1,11 +1,9 @@
 import logging
 import re
 from functools import partialmethod
-from logging.handlers import WatchedFileHandler
-from datetime import datetime
 from os import makedirs
 import coloredlogs
-from utils.SteelSeriesLoggerHandler import SteelSeriesHandler, SsFormatter
+# from utils.SteelSeriesLoggerHandler import SteelSeriesHandler, SsFormatter
 
 
 class ColorFormatter(coloredlogs.ColoredFormatter):
