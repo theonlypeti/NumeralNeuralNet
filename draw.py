@@ -12,12 +12,21 @@ import PIL.Image as Image
 
 
 class ImageToData(FileSystemEventHandler):
-    def __init__(self, visualize=False):
+    def __init__(self, out=None, visualize=False, resolution=100, tolerance=5):
+        """
+        :param out: Output file. If not specified, it will be output.csv in the cwd.
+        :param visualize:  Shows the grid after each drawing in your image viewer program. For demonstration purposes mostly.
+        :param resolution: Size of each tile. The numpy output will be image size / resolution (eg 700/100; 400/100 = 7x4)
+        :param tolerance: [1-99] Percent of pixels has to be black to be considered 1 in the output.
+        """
         super().__init__()
-        self.visualize = visualize  # if you want to see the grid after each drawing. for demonstration purposes mostly.
+        self.visualize = visualize
         self.last_modified = datetime.now()  # the file watcher often fires twice for some reason, this is to prevent that
-        self.resolution = 100  # size of each tile. the numpy output will be image size / resolution (eg 700/100; 400/100 = 7x4)
-        self.tolerance = 5  # percent of pixels has to be black to be considered 1 in the output
+        self.resolution = resolution
+        self.tolerance = tolerance
+        self.out = out or "output.csv"
+
+        self.tol = ((resolution * resolution * 255) / 100) * (100 - tolerance)  # amount of pixels that can be white
 
     def convert_to_dataset(self, src_path):
 
@@ -50,15 +59,14 @@ class ImageToData(FileSystemEventHandler):
                     drawctx.line(((0, i * resolution), (w, i * resolution)), fill=(0, 255, 0), width=1)
 
                 tile: np.ndarray = img[i * resolution:(i + 1) * resolution, j * resolution:(j + 1) * resolution]  # taking a 100x100 slice. 100 can be changed by the resolution var
-                tolerance = self.tolerance
-                tol = ((resolution * resolution * 255) / 100) * (100 - tolerance)  # amount of pixels that can be white
+
 
                 logger.debug(f"x={j},y={i}")
-                logger.debug(f"{np.sum(tile)=}, {tol=}")
-                logger.debug(np.sum(tile) < tol)
+                logger.debug(f"{np.sum(tile)=}, {self.tol=}")
+                logger.debug(np.sum(tile) < self.tol)
                 # logger.debug(f"{tile=}")
 
-                if np.sum(tile) < tol:  # if there are less than tol white pixels, it's black
+                if np.sum(tile) < self.tol:  # if there are less than tol white pixels, it's black
                     logger.debug(f"black pixels at {j},{i}")
                     out[i, j] = 1
 
@@ -77,11 +85,11 @@ class ImageToData(FileSystemEventHandler):
         logger.debug(f"{out.shape=}")
         logger.info(f"\n{out=}")
 
-        if not os.path.exists("output.csv"):
-            with open("output.csv", "w") as f:
+        if not os.path.exists(self.out):
+            with open(self.out, "w") as f:
                 f.write(",".join(map(str, range(out.size))) + ",target\n")
 
-        with open(f"output.csv", "a") as f:
+        with open(self.out, "a") as f:
             f.write(",".join(map(str, out.flatten())) + f",{num}\n")
 
         white_image = np.full((h, w, 3), 255, dtype=np.uint8)
@@ -101,6 +109,7 @@ def create_imgs(dir, w, h):
     orig = Image.new("RGB", (w, h), (255, 255, 255))
     for i in range(10):
         orig.save(os.path.join(dir, f"{i}_input.png"), format="PNG")
+
 
 if __name__ == "__main__":
 
@@ -128,7 +137,7 @@ if __name__ == "__main__":
         create_imgs(directory, args.w, args.h)
         logger.info("Created 10 images for you to edit. Edit them and save them to see the results.")
 
-    event_handler = ImageToData(visualize=args.visualize)
+    event_handler = ImageToData(visualize=args.visualize, resolution=args.resolution, tolerance=5)
     observer = Observer()
     observer.schedule(event_handler, directory, recursive=False)
     observer.start()
